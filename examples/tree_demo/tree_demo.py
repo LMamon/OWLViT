@@ -19,6 +19,7 @@ import argparse
 from aiohttp import web, WSCloseCode
 import logging
 import weakref
+import re
 import cv2
 import time
 import PIL.Image
@@ -38,12 +39,31 @@ if __name__ == "__main__":
     parser.add_argument("--image_quality", type=int, default=50)
     parser.add_argument("--port", type=int, default=7860)
     parser.add_argument("--host", type=str, default="0.0.0.0")
-    parser.add_argument("--camera", type=int, default=0)
+    parser.add_argument("--camera", type=int, default=0, help="0=USB (/dev/video0), 1=UDP (udpsrc over GStreamer)")
     parser.add_argument("--resolution", type=str, default="640x480", help="Camera resolution as WIDTHxHEIGHT")
     args = parser.parse_args()
     width, height = map(int, args.resolution.split("x"))
 
-    CAMERA_DEVICE = args.camera
+    CAMERA_MODE = int(args.camera)
+
+    if CAMERA_MODE == 0:
+        CAMERA_DEVICE = 0
+        USE_GSTREAMER = False
+    elif CAMERA_MODE == 1:
+        CAMERA_DEVICE = (
+            "udpsrc port=5000 "
+            "caps=application/x-rtp,media=video,encoding-name=H264,payload=96 "
+            "! rtpjitterbuffer drop-on-latency=true latency=50 "
+            "! rtph264depay "
+            "! h264parse "
+            "! avdec_h264 "
+            "! videoconvert "
+            "! appsink sync=false "
+        )
+        USE_GSTREAMER = True
+    else:
+        raise ValueError("Invalid --camera. Use 0=USB webcam, 1=UDP/GStreamer.")
+    
     IMAGE_QUALITY = args.image_quality
 
     predictor = TreePredictor(
@@ -120,9 +140,15 @@ if __name__ == "__main__":
 
         loop = asyncio.get_running_loop()
 
-        logging.info("Opening camera.")
+        logging.info(f"Opening camera: {CAMERA_DEVICE}")
 
-        camera = cv2.VideoCapture(CAMERA_DEVICE)
+        if USE_GSTREAMER:
+            logging.info(f"Opening GStreamer pipeline:\n{CAMERA_DEVICE}")
+            camera = cv2.VideoCapture(CAMERA_DEVICE, cv2.CAP_GSTREAMER)
+        else:
+            logging.info(f"Opening V4L2 camera index: {CAMERA_DEVICE}")
+            camera = cv2.VideoCapture(int(CAMERA_DEVICE))
+            
         camera.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         camera.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
