@@ -77,7 +77,7 @@ NanoOWL runs real-time on Jetson Orin Nano.
 
 | Repository/Tag | Date | Arch | Size |
 | :-- | :--: | :--: | :--: |
-| &nbsp;&nbsp;[`roylvzn/owlvit:1.0.0`](https://hub.docker.com/r/roylvzn/owlvit/tags) | `2025-12-21` | `arm64` | `9.66GB` |
+| &nbsp;&nbsp;[`roylvzn/owlvit:latest`](https://hub.docker.com/repository/docker/roylvzn/owlvit/general) | `2025-12-25` | `arm64` | `9.66GB` |
 
 1. Install the dependencies
 
@@ -207,7 +207,7 @@ live-edited text prompts.  To run the example
 2. Launch the demo
     ```bash
     cd examples/tree_demo
-    python3 tree_demo.py --camera 1 ../../data/owl_image_encoder_patch32.engine
+    python3 tree_demo.py ../../data/owl_image_encoder_patch32.engine
     ```
 3. Second, open your browser to ``http://<ip address>:7860``
 4. Type whatever prompt you like to see what works!  Here are some examples
